@@ -94,6 +94,59 @@
   }
   .clear-all:active { background: rgba(0, 0, 0, 0.06); }
 
+  .menu-wrap {
+    position: relative;
+  }
+  .menu-btn {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+  }
+  .menu-btn:active { background: rgba(0, 0, 0, 0.06); }
+  .menu-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    min-width: 140px;
+    padding: 6px 0;
+    z-index: 100;
+  }
+  .menu-dropdown.show { display: block; }
+  .menu-dropdown button {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .menu-dropdown button:active { background: rgba(0, 0, 0, 0.04); }
+  .menu-section {
+    padding: 6px 16px 4px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .menu-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 4px 0;
+  }
+
   .toolbar {
     display: flex;
     gap: 8px;
@@ -502,31 +555,26 @@
   <header class="topbar">
     <div class="top-row">
       <div id="deviceAvatar" class="avatar">💻</div>
-      <div class="title">
-        <h1 id="pageTitle">发送到电脑</h1>
+      <div class="title" onclick="editContactName()" style="cursor:pointer">
+        <h1 id="pageTitle">电脑</h1>
         <p id="statusText">正在连接服务…</p>
       </div>
       <span id="statusDot" class="status-dot"></span>
-      <button class="clear-all" onclick="clearHistory()">清空</button>
-    </div>
-    <div class="toolbar">
-      <div class="segmented" aria-label="当前访问设备">
-        <button id="devicePhoneBtn" type="button" onclick="setClient('phone')">手机访问</button>
-        <button id="deviceComputerBtn" type="button" onclick="setClient('computer')">电脑访问</button>
+      <div class="menu-wrap">
+        <button class="menu-btn" onclick="toggleMenu()">⋯</button>
+        <div id="menuDropdown" class="menu-dropdown">
+          <div class="menu-section">当前设备</div>
+          <button onclick="setClient('phone')">手机访问</button>
+          <button onclick="setClient('computer')">电脑访问</button>
+          <div class="menu-divider"></div>
+          <div class="menu-section">发送身份</div>
+          <button onclick="setSender('phone')">手机发送</button>
+          <button onclick="setSender('computer')">电脑发送</button>
+          <div class="menu-divider"></div>
+          <button onclick="editContactName()">修改联系人名称</button>
+          <button onclick="clearHistory()">清空记录</button>
+        </div>
       </div>
-      <div class="segmented" aria-label="发送方">
-        <button id="senderPhoneBtn" type="button" onclick="setSender('phone')">手机发送</button>
-        <button id="senderComputerBtn" type="button" onclick="setSender('computer')">电脑发送</button>
-      </div>
-      <div class="avatar-settings">
-        <button class="avatar-btn" onclick="handleAvatarUpload('phone')" title="设置手机头像">📱</button>
-        <button class="avatar-btn" onclick="handleAvatarUpload('computer')" title="设置电脑头像">💻</button>
-      </div>
-    </div>
-    <div id="lanBar" class="lan-bar">
-      <span class="lan-label">📱 手机访问</span>
-      <span id="lanUrl" class="lan-url">获取地址中…</span>
-      <button id="lanCopyBtn" type="button" class="lan-copy" onclick="copyLanUrl(this)">复制</button>
     </div>
   </header>
 
@@ -562,6 +610,7 @@ let initialHistoryLoaded = false;
 const DEVICE_KEY = 'wifi-transfer-client';
 const SENDER_KEY = 'wifi-transfer-sender';
 const CLIENT_ID_KEY = 'wifi-transfer-client-id';
+const CONTACT_NAME_KEY = 'wifi-transfer-contact-name';
 
 let clientType = localStorage.getItem(DEVICE_KEY) || detectClientType();
 let currentSender = localStorage.getItem(SENDER_KEY) || clientType;
@@ -929,15 +978,39 @@ function updateUploadProgress(localMessage) {
 }
 
 function updateClientUI() {
-  $('devicePhoneBtn').classList.toggle('active', clientType === 'phone');
-  $('deviceComputerBtn').classList.toggle('active', clientType === 'computer');
-  $('senderPhoneBtn').classList.toggle('active', currentSender === 'phone');
-  $('senderComputerBtn').classList.toggle('active', currentSender === 'computer');
   $('deviceAvatar').textContent = clientType === 'phone' ? '📱' : '💻';
-  $('pageTitle').textContent = clientType === 'phone' ? '发送到电脑' : '发送到手机';
-  updateLanBar();
+  const contactName = getContactName();
+  $('pageTitle').textContent = contactName;
   renderMessages(true);
 }
+
+function getContactName() {
+  return localStorage.getItem(CONTACT_NAME_KEY) || (clientType === 'phone' ? '电脑' : '手机');
+}
+
+function editContactName() {
+  closeMenu();
+  const current = getContactName();
+  const newName = prompt('设置联系人名称：', current);
+  if (newName !== null && newName.trim()) {
+    localStorage.setItem(CONTACT_NAME_KEY, newName.trim());
+    updateClientUI();
+  }
+}
+
+function toggleMenu() {
+  const menu = $('menuDropdown');
+  menu.classList.toggle('show');
+}
+
+function closeMenu() {
+  const menu = $('menuDropdown');
+  if (menu) menu.classList.remove('show');
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.menu-wrap')) closeMenu();
+});
 
 function updateServerStatus() {
   $('statusDot').className = `status-dot ${SERVER_OK ? 'ok' : 'err'}`;
@@ -949,13 +1022,16 @@ function updateServerStatus() {
 function setClient(type) {
   clientType = type === 'computer' ? 'computer' : 'phone';
   localStorage.setItem(DEVICE_KEY, clientType);
-  if (!currentSender) currentSender = clientType;
+  currentSender = clientType;
+  localStorage.setItem(SENDER_KEY, currentSender);
+  closeMenu();
   updateClientUI();
 }
 
 function setSender(type) {
   currentSender = type === 'computer' ? 'computer' : 'phone';
   localStorage.setItem(SENDER_KEY, currentSender);
+  closeMenu();
   updateClientUI();
 }
 
@@ -1176,10 +1252,6 @@ function setBusy(busy) {
   $('sendBtn').disabled = busy;
   $('fileInput').disabled = busy;
   $('textInput').disabled = busy;
-  $('devicePhoneBtn').disabled = busy;
-  $('deviceComputerBtn').disabled = busy;
-  $('senderPhoneBtn').disabled = busy;
-  $('senderComputerBtn').disabled = busy;
 }
 
 async function sendCurrent() {
@@ -1413,12 +1485,10 @@ async function clearHistory() {
   }
 }
 
-setClient(clientType);
-setSender(currentSender);
+updateClientUI();
 updateServerStatus();
 loadHistory(false);
 loadAvatars();
-loadLanInfo();
 connectEvents();
 </script>
 </body>
