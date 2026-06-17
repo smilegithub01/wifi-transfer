@@ -333,6 +333,11 @@ app.get('/api/history', (_req, res) => {
   res.json({ items: history.slice(0, MAX_HISTORY_ITEMS) });
 });
 
+app.get('/api/info', (_req, res) => {
+  const ip = getLocalIP();
+  res.json({ ip, port: PORT, url: `http://${ip}:${PORT}` });
+});
+
 app.delete('/api/history', (_req, res) => {
   clearHistoryItems();
   res.json({ ok: true });
