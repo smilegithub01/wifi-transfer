@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -123,6 +123,28 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   }
 
+  .avatar-settings {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+  .avatar-btn {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: rgba(255, 255, 255, 0.74);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    transition: transform .12s ease;
+  }
+  .avatar-btn:active {
+    transform: scale(.92);
+  }
+
   .chat {
     flex: 1;
     min-height: 0;
@@ -153,6 +175,24 @@
   }
   .msg.left { justify-content: flex-start; }
   .msg.right { justify-content: flex-end; }
+  .msg-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    flex: 0 0 auto;
+    align-self: flex-start;
+    overflow: hidden;
+    background: linear-gradient(135deg, #10d56f, #04a85a);
+    color: #fff;
+  }
+  .msg-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
   @keyframes pop {
     from { opacity: 0; transform: translateY(8px) scale(.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -416,6 +456,10 @@
         <button id="senderPhoneBtn" type="button" onclick="setSender('phone')">手机发送</button>
         <button id="senderComputerBtn" type="button" onclick="setSender('computer')">电脑发送</button>
       </div>
+      <div class="avatar-settings">
+        <button class="avatar-btn" onclick="handleAvatarUpload('phone')" title="设置手机头像">📱</button>
+        <button class="avatar-btn" onclick="handleAvatarUpload('computer')" title="设置电脑头像">💻</button>
+      </div>
     </div>
   </header>
 
@@ -450,6 +494,7 @@ let initialHistoryLoaded = false;
 const DEVICE_KEY = 'wifi-transfer-client';
 const SENDER_KEY = 'wifi-transfer-sender';
 const CLIENT_ID_KEY = 'wifi-transfer-client-id';
+const AVATAR_KEY = 'wifi-transfer-avatars';
 
 let clientType = localStorage.getItem(DEVICE_KEY) || detectClientType();
 let currentSender = localStorage.getItem(SENDER_KEY) || clientType;
@@ -459,6 +504,55 @@ localStorage.setItem(CLIENT_ID_KEY, localClientId);
 function detectClientType() {
   const ua = navigator.userAgent || '';
   return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? 'phone' : 'computer';
+}
+
+function getAvatars() {
+  try {
+    return JSON.parse(localStorage.getItem(AVATAR_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function setAvatar(sender, dataUrl) {
+  const avatars = getAvatars();
+  if (dataUrl) {
+    avatars[sender] = dataUrl;
+  } else {
+    delete avatars[sender];
+  }
+  localStorage.setItem(AVATAR_KEY, JSON.stringify(avatars));
+  renderMessages(true);
+}
+
+function getAvatarForSender(sender) {
+  const avatars = getAvatars();
+  const avatar = avatars[sender];
+  if (avatar) {
+    return `<img src="${escHtml(avatar)}" alt="${senderName(sender)}">`;
+  }
+  return sender === 'computer' ? '💻' : '📱';
+}
+
+function handleAvatarUpload(sender) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      toastMsg('头像不能超过 500KB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAvatar(sender, event.target.result);
+      toastMsg('头像已更新');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
 }
 
 function createClientId() {
@@ -625,6 +719,14 @@ function messageHtml(item) {
   if (item.durationMs) metaParts.push(`耗时 ${formatDuration(item.durationMs)}`);
   if (item.speed) metaParts.push(formatSpeed(item.speed));
 
+  const avatarData = getAvatarForSender(item.sender);
+  const avatarHtml = side === 'left'
+    ? `<div class="msg-avatar">${avatarData}</div>`
+    : '';
+  const avatarHtmlRight = side === 'right'
+    ? `<div class="msg-avatar">${avatarData}</div>`
+    : '';
+
   let body = '';
   if (item.type === 'text') {
     body = `<div>${escHtml(item.text).replace(/\n/g, '<br>')}</div>`;
@@ -653,6 +755,21 @@ function messageHtml(item) {
         </div>
       </a>`;
   }
+
+  return `
+    <div class="msg ${side}" data-id="${escHtml(item.id || '')}">
+      ${avatarHtml}
+      <div class="bubble-wrap">
+        <div class="sender-label">${escHtml(senderName(item.sender))}</div>
+        <div class="bubble">${body}</div>
+        <div class="meta">
+          <span>${metaParts.filter(Boolean).join(' · ')}</span>
+          ${canDelete ? `<button class="delete-one" onclick="deleteMessage('${escHtml(item.id)}')">删除</button>` : ''}
+        </div>
+      </div>
+      ${avatarHtmlRight}
+    </div>`;
+}
 
   return `
     <div class="msg ${side}" data-id="${escHtml(item.id || '')}">
