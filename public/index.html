@@ -263,7 +263,7 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  .bubble-wrap { max-width: min(80%, 640px); position: relative; }
+  .bubble-wrap { max-width: min(80%, 640px); position: relative; width: max-content; }
   .sender-label {
     margin-bottom: 4px;
     color: var(--muted);
@@ -273,6 +273,7 @@
   .right .sender-label { text-align: right; }
   .bubble {
     position: relative;
+    display: inline-block;
     border-radius: 8px;
     padding: 9px 11px;
     line-height: 1.48;
@@ -620,7 +621,7 @@ let localClientId = localStorage.getItem('wifi-transfer-client-id') || createCli
 let audioContext = null;
 let audioUnlocked = false;
 let initialHistoryLoaded = false;
-let unreadCount = 0;
+let unreadCount = 998;
 
 const DEVICE_KEY = 'wifi-transfer-client';
 const SENDER_KEY = 'wifi-transfer-sender';
@@ -1529,6 +1530,7 @@ updateServerStatus();
 loadHistory(false);
 loadAvatars();
 connectEvents();
+updateUnreadBadge();
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) clearUnread();
