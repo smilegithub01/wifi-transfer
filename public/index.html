@@ -264,6 +264,7 @@
   }
 
   .bubble-wrap { width: fit-content; max-width: min(80%, 640px); position: relative; }
+.msg.right .bubble-wrap { margin-bottom: 20px; }
   .sender-label {
     margin-bottom: 4px;
     color: var(--muted);
@@ -303,7 +304,13 @@
     color: var(--muted);
     font-size: 11px;
   }
-  .right .meta { justify-content: flex-end; }
+  .left .meta { }
+  .right .meta {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    white-space: nowrap;
+  }
   .delete-one, .copy-one {
     border: 0;
     background: transparent;
