@@ -53,42 +53,33 @@
   }
 
   .top-row { display: flex; align-items: center; gap: 10px; }
-  .avatar-wrap {
-    position: relative;
-    width: 38px;
-    height: 38px;
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
     flex-shrink: 0;
   }
-  .avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(135deg, #10d56f, #04a85a);
-    color: #fff;
+  .back-arrow {
     font-size: 20px;
-    box-shadow: var(--shadow);
+    color: var(--text);
+    font-weight: 300;
   }
-  .unread-badge {
-    position: absolute;
-    top: -5px;
-    right: -8px;
+  .unread-count {
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
     border-radius: 9px;
-    background: var(--danger);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.12);
+    color: var(--text);
     font-size: 11px;
     font-weight: 600;
     display: none;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 3px rgba(250, 81, 81, 0.4);
     line-height: 1;
   }
-  .unread-badge.show { display: flex; }
+  .unread-count.show { display: flex; }
   .title { flex: 1; min-width: 0; text-align: center; }
   .title h1 { margin: 0; font-size: 16px; font-weight: 700; }
   .status-dot {
@@ -571,9 +562,9 @@
 <div class="app">
   <header class="topbar">
     <div class="top-row">
-      <div class="avatar-wrap">
-        <div id="deviceAvatar" class="avatar">💻</div>
-        <span id="unreadBadge" class="unread-badge">0</span>
+      <div class="back-btn" onclick="goBack()">
+        <span class="back-arrow">&lt;</span>
+        <span id="unreadCount" class="unread-count">0</span>
       </div>
       <div class="title" onclick="editContactName()" style="cursor:pointer">
         <h1 id="pageTitle">电脑</h1>
@@ -1005,7 +996,6 @@ function updateUploadProgress(localMessage) {
 }
 
 function updateClientUI() {
-  $('deviceAvatar').textContent = clientType === 'phone' ? '📱' : '💻';
   const contactName = getContactName();
   $('pageTitle').textContent = contactName;
   renderMessages(true);
@@ -1013,6 +1003,10 @@ function updateClientUI() {
 
 function getContactName() {
   return localStorage.getItem(CONTACT_NAME_KEY) || (clientType === 'phone' ? 'cherry' : 'Jenkov');
+}
+
+function goBack() {
+  clearUnread();
 }
 
 function editContactName() {
@@ -1044,7 +1038,7 @@ function updateServerStatus() {
 }
 
 function updateUnreadBadge() {
-  const badge = $('unreadBadge');
+  const badge = $('unreadCount');
   if (unreadCount > 0) {
     badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
     badge.classList.add('show');
