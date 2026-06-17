@@ -11,10 +11,11 @@ const ROOT_DIR = __dirname;
 const UPLOAD_DIR = path.join(ROOT_DIR, 'uploads');
 const HISTORY_DIR = path.join(ROOT_DIR, 'history');
 const HISTORY_FILE = path.join(HISTORY_DIR, 'history.json');
+const AVATARS_DIR = path.join(ROOT_DIR, 'avatars');
 const MAX_HISTORY_ITEMS = 200;
 const sseClients = new Set();
 
-for (const dir of [UPLOAD_DIR, HISTORY_DIR]) {
+for (const dir of [UPLOAD_DIR, HISTORY_DIR, AVATARS_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -350,6 +351,47 @@ app.delete('/api/history/:id', (req, res) => {
   }
   res.json({ ok: true });
 });
+
+app.get('/api/avatars', (_req, res) => {
+  const avatars = {};
+  for (const sender of ['phone', 'computer']) {
+    const filePath = path.join(AVATARS_DIR, `${sender}.jpg`);
+    if (fs.existsSync(filePath)) {
+      avatars[sender] = `/avatars/${sender}.jpg`;
+    }
+  }
+  res.json(avatars);
+});
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, AVATARS_DIR),
+  filename: (req, file, cb) => {
+    cb(null, `${req.params.sender}.jpg`);
+  },
+});
+const avatarUpload = multer({ storage: avatarStorage, limits: { fileSize: 500 * 1024 } });
+
+app.post('/api/avatars/:sender', avatarUpload.single('avatar'), (req, res) => {
+  const { sender } = req.params;
+  if (sender !== 'phone' && sender !== 'computer') {
+    return res.status(400).json({ error: '无效的发送方' });
+  }
+  res.json({ ok: true, url: `/avatars/${sender}.jpg` });
+});
+
+app.delete('/api/avatars/:sender', (req, res) => {
+  const { sender } = req.params;
+  if (sender !== 'phone' && sender !== 'computer') {
+    return res.status(400).json({ error: '无效的发送方' });
+  }
+  const filePath = path.join(AVATARS_DIR, `${sender}.jpg`);
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch {}
+  res.json({ ok: true });
+});
+
+app.use('/avatars', express.static(AVATARS_DIR));
 
 app.use((error, _req, res, next) => {
   if (!error) return next();

@@ -182,8 +182,9 @@
     width: 36px;
     height: 36px;
     border-radius: 6px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 18px;
     flex: 0 0 36px;
     align-self: flex-start;
@@ -561,7 +562,6 @@ let initialHistoryLoaded = false;
 const DEVICE_KEY = 'wifi-transfer-client';
 const SENDER_KEY = 'wifi-transfer-sender';
 const CLIENT_ID_KEY = 'wifi-transfer-client-id';
-const AVATAR_KEY = 'wifi-transfer-avatars';
 
 let clientType = localStorage.getItem(DEVICE_KEY) || detectClientType();
 let currentSender = localStorage.getItem(SENDER_KEY) || clientType;
@@ -573,51 +573,52 @@ function detectClientType() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? 'phone' : 'computer';
 }
 
-function getAvatars() {
-  try {
-    return JSON.parse(localStorage.getItem(AVATAR_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
+let serverAvatars = {};
 
-function setAvatar(sender, dataUrl) {
-  const avatars = getAvatars();
-  if (dataUrl) {
-    avatars[sender] = dataUrl;
-  } else {
-    delete avatars[sender];
-  }
-  localStorage.setItem(AVATAR_KEY, JSON.stringify(avatars));
-  renderMessages(true);
+async function loadAvatars() {
+  try {
+    const r = await fetch('/api/avatars');
+    serverAvatars = await r.json();
+    renderMessages(true);
+  } catch {}
 }
 
 function getAvatarForSender(sender) {
-  const avatars = getAvatars();
-  const avatar = avatars[sender];
+  const avatar = serverAvatars[sender];
   if (avatar) {
-    return `<img src="${escHtml(avatar)}" alt="${senderName(sender)}">`;
+    const bustCache = `?t=${Date.now()}`;
+    const fallback = sender === 'computer' ? '💻' : '📱';
+    return `<img src="${escHtml(avatar + bustCache)}" alt="${escHtml(senderName(sender))}" onerror="this.parentElement.textContent='${fallback}'">`;
   }
   return sender === 'computer' ? '💻' : '📱';
 }
 
-function handleAvatarUpload(sender) {
+async function handleAvatarUpload(sender) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
-  input.onchange = (e) => {
+  input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 500 * 1024) {
       toastMsg('头像不能超过 500KB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setAvatar(sender, event.target.result);
-      toastMsg('头像已更新');
-    };
-    reader.readAsDataURL(file);
+    const fd = new FormData();
+    fd.append('avatar', file);
+    try {
+      const r = await fetch(`/api/avatars/${sender}`, { method: 'POST', body: fd });
+      const d = await r.json();
+      if (r.ok && d.url) {
+        serverAvatars[sender] = d.url;
+        renderMessages(true);
+        toastMsg('头像已更新');
+      } else {
+        toastMsg(d.error || '上传失败');
+      }
+    } catch {
+      toastMsg('上传失败');
+    }
   };
   input.click();
 }
@@ -1416,6 +1417,7 @@ setClient(clientType);
 setSender(currentSender);
 updateServerStatus();
 loadHistory(false);
+loadAvatars();
 loadLanInfo();
 connectEvents();
 </script>
