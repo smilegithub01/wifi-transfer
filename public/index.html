@@ -571,6 +571,10 @@
           <button onclick="setSender('phone')">手机发送</button>
           <button onclick="setSender('computer')">电脑发送</button>
           <div class="menu-divider"></div>
+          <div class="menu-section">头像设置</div>
+          <button onclick="handleAvatarUpload('phone')">📱 上传手机头像</button>
+          <button onclick="handleAvatarUpload('computer')">💻 上传电脑头像</button>
+          <div class="menu-divider"></div>
           <button onclick="editContactName()">修改联系人名称</button>
           <button onclick="clearHistory()">清空记录</button>
         </div>
@@ -643,6 +647,7 @@ function getAvatarForSender(sender) {
 }
 
 async function handleAvatarUpload(sender) {
+  closeMenu();
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -877,7 +882,6 @@ function messageHtml(item) {
     <div class="msg ${side}" data-id="${escHtml(item.id || '')}">
       ${avatarHtml}
       <div class="bubble-wrap">
-        <div class="sender-label">${escHtml(senderName(item.sender))}</div>
         <div class="bubble">${body}</div>
         <div class="meta">
           <span>${metaParts.filter(Boolean).join(' · ')}</span>
