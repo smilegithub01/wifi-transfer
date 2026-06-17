@@ -828,24 +828,11 @@ function messageHtml(item) {
         <div class="bubble">${body}</div>
         <div class="meta">
           <span>${metaParts.filter(Boolean).join(' · ')}</span>
+          ${item.type === 'text' ? `<button class="copy-one" onclick="copyText(this, '${encodeURIComponent(item.text || '')}')">复制</button>` : ''}
           ${canDelete ? `<button class="delete-one" onclick="deleteMessage('${escHtml(item.id)}')">删除</button>` : ''}
         </div>
       </div>
       ${avatarHtmlRight}
-    </div>`;
-}
-
-  return `
-    <div class="msg ${side}" data-id="${escHtml(item.id || '')}">
-      <div class="bubble-wrap">
-        <div class="sender-label">${escHtml(senderName(item.sender))}</div>
-        <div class="bubble">${body}</div>
-        <div class="meta">
-          <span>${metaParts.filter(Boolean).join(' · ')}</span>
-          ${item.type === 'text' ? `<button class="copy-one" onclick="copyText(this, '${encodeURIComponent(item.text)}')">复制</button>` : ''}
-          ${canDelete ? `<button class="delete-one" onclick="deleteMessage('${escHtml(item.id)}')">删除</button>` : ''}
-        </div>
-      </div>
     </div>`;
 }
 
