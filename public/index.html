@@ -570,9 +570,9 @@
 <div class="app">
   <header class="topbar">
     <div class="top-row">
-      <div class="back-btn" onclick="goBack()">
+      <div class="back-btn">
         <span class="back-arrow">&lt;</span>
-        <span id="unreadCount" class="unread-count">0</span>
+        <span id="unreadCount" class="unread-count show">1334</span>
       </div>
       <div class="title" onclick="editContactName()" style="cursor:pointer">
         <h1 id="pageTitle">电脑</h1>
@@ -628,7 +628,6 @@ let localClientId = localStorage.getItem('wifi-transfer-client-id') || createCli
 let audioContext = null;
 let audioUnlocked = false;
 let initialHistoryLoaded = false;
-let unreadCount = 0;
 
 const DEVICE_KEY = 'wifi-transfer-client';
 const SENDER_KEY = 'wifi-transfer-sender';
@@ -1013,10 +1012,6 @@ function getContactName() {
   return localStorage.getItem(CONTACT_NAME_KEY) || (clientType === 'phone' ? 'cherry' : 'Jenkov');
 }
 
-function goBack() {
-  clearUnread();
-}
-
 function editContactName() {
   closeMenu();
   const current = getContactName();
@@ -1043,26 +1038,6 @@ document.addEventListener('click', (e) => {
 
 function updateServerStatus() {
   $('statusDot').className = `status-dot ${SERVER_OK ? 'ok' : 'err'}`;
-}
-
-function updateUnreadBadge() {
-  const badge = $('unreadCount');
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
-  }
-}
-
-function clearUnread() {
-  unreadCount = 0;
-  updateUnreadBadge();
-}
-
-function addUnread() {
-  unreadCount++;
-  updateUnreadBadge();
 }
 
 function setClient(type) {
@@ -1164,7 +1139,6 @@ function connectEvents() {
         renderMessages(true);
         if (initialHistoryLoaded && !existed && !isLocalEcho) {
           playReceiveSound();
-          addUnread();
         }
       }
     } catch {}
@@ -1537,12 +1511,6 @@ updateServerStatus();
 loadHistory(false);
 loadAvatars();
 connectEvents();
-updateUnreadBadge();
-
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) clearUnread();
-});
-window.addEventListener('focus', clearUnread);
 </script>
 </body>
 </html>
