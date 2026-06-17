@@ -234,7 +234,7 @@
   .msg {
     display: flex;
     gap: 8px;
-    margin: 8px 0;
+    margin: 4px 0 12px;
     animation: pop .22s ease-out both;
   }
   .msg.left { justify-content: flex-start; }
@@ -302,12 +302,8 @@
     margin-top: 4px;
     color: var(--muted);
     font-size: 11px;
-    position: absolute;
-    top: 100%;
-    white-space: nowrap;
   }
-  .left .meta { left: 0; }
-  .right .meta { right: 0; }
+  .right .meta { justify-content: flex-end; }
   .delete-one, .copy-one {
     border: 0;
     background: transparent;
@@ -625,7 +621,7 @@ let localClientId = localStorage.getItem('wifi-transfer-client-id') || createCli
 let audioContext = null;
 let audioUnlocked = false;
 let initialHistoryLoaded = false;
-let unreadCount = 998;
+let unreadCount = 0;
 
 const DEVICE_KEY = 'wifi-transfer-client';
 const SENDER_KEY = 'wifi-transfer-sender';
