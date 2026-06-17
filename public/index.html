@@ -263,7 +263,7 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  .bubble-wrap { max-width: min(80%, 640px); position: relative; width: max-content; }
+  .bubble-wrap { max-width: min(80%, 640px); position: relative; }
   .sender-label {
     margin-bottom: 4px;
     color: var(--muted);
@@ -302,10 +302,12 @@
     margin-top: 4px;
     color: var(--muted);
     font-size: 11px;
-    width: fit-content;
+    position: absolute;
+    top: 100%;
+    white-space: nowrap;
   }
-  .left .meta { }
-  .right .meta { margin-left: auto; }
+  .left .meta { left: 0; }
+  .right .meta { right: 0; }
   .delete-one, .copy-one {
     border: 0;
     background: transparent;
