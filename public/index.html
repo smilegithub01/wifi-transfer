@@ -263,7 +263,7 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  .bubble-wrap { max-width: min(80%, 640px); position: relative; }
+  .bubble-wrap { width: fit-content; max-width: min(80%, 640px); position: relative; }
   .sender-label {
     margin-bottom: 4px;
     color: var(--muted);
@@ -282,7 +282,7 @@
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
   }
   .left .bubble { background: var(--left); border-top-left-radius: 4px; }
-  .right .bubble { background: var(--right); border-top-right-radius: 4px; }
+  .right .bubble { background: var(--right); border-top-right-radius: 4px; margin-left: auto; }
   .right .bubble:active { background: var(--right-deep); }
   .bubble::after {
     content: "";
