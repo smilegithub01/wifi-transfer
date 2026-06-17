@@ -417,6 +417,41 @@
     cursor: default;
   }
 
+  .lan-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 7px 10px;
+    border-radius: 12px;
+    background: rgba(7, 193, 96, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(7, 193, 96, 0.18);
+  }
+  .lan-bar.show { display: flex; }
+  .lan-label { font-size: 12px; color: var(--muted); flex: 0 0 auto; }
+  .lan-url {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--brand);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .lan-copy {
+    flex: 0 0 auto;
+    border: 0;
+    background: var(--brand);
+    color: #fff;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .lan-copy:active { transform: scale(.94); }
+
   .toast {
     position: fixed;
     left: 50%;
@@ -460,6 +495,11 @@
         <button class="avatar-btn" onclick="handleAvatarUpload('phone')" title="设置手机头像">📱</button>
         <button class="avatar-btn" onclick="handleAvatarUpload('computer')" title="设置电脑头像">💻</button>
       </div>
+    </div>
+    <div id="lanBar" class="lan-bar">
+      <span class="lan-label">📱 手机访问</span>
+      <span id="lanUrl" class="lan-url">获取地址中…</span>
+      <button id="lanCopyBtn" type="button" class="lan-copy" onclick="copyLanUrl(this)">复制</button>
     </div>
   </header>
 
@@ -880,6 +920,7 @@ function updateClientUI() {
   $('senderComputerBtn').classList.toggle('active', currentSender === 'computer');
   $('deviceAvatar').textContent = clientType === 'phone' ? '📱' : '💻';
   $('pageTitle').textContent = clientType === 'phone' ? '发送到电脑' : '发送到手机';
+  updateLanBar();
   renderMessages(true);
 }
 
@@ -1194,28 +1235,31 @@ function guessLocalCategory(filename) {
   return 'other';
 }
 
-async function copyText(btn, encoded) {
-  const text = decodeURIComponent(encoded || '');
-  let ok = false;
+async function writeClipboard(text) {
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
-      ok = true;
+      return true;
     }
   } catch {}
-  if (!ok) {
-    // 局域网多为 http，clipboard API 不可用，回退到 execCommand
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.top = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-    } catch {}
-  }
+  // 局域网多为 http，clipboard API 不可用，回退到 execCommand
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {}
+  return false;
+}
+
+async function copyText(btn, encoded) {
+  const text = decodeURIComponent(encoded || '');
+  const ok = await writeClipboard(text);
   if (ok) {
     toastMsg('已复制');
     if (btn) {
@@ -1225,6 +1269,39 @@ async function copyText(btn, encoded) {
     }
   } else {
     toastMsg('复制失败，请手动选择');
+  }
+}
+
+let lanUrlValue = '';
+
+async function loadLanInfo() {
+  try {
+    const r = await fetch('/api/info');
+    const d = await r.json();
+    lanUrlValue = d.url || '';
+    if (lanUrlValue) $('lanUrl').textContent = lanUrlValue;
+  } catch {}
+  updateLanBar();
+}
+
+function updateLanBar() {
+  // 仅电脑端展示：电脑打开的是 localhost，需把真实局域网地址告诉手机
+  const show = clientType === 'computer' && !!lanUrlValue;
+  $('lanBar').classList.toggle('show', show);
+}
+
+async function copyLanUrl(btn) {
+  if (!lanUrlValue) return toastMsg('地址未就绪');
+  const ok = await writeClipboard(lanUrlValue);
+  if (ok) {
+    toastMsg('地址已复制，发到手机打开即可');
+    if (btn) {
+      const original = btn.textContent;
+      btn.textContent = '已复制';
+      setTimeout(() => { btn.textContent = original; }, 1200);
+    }
+  } else {
+    toastMsg('复制失败，请手动输入');
   }
 }
 
@@ -1260,6 +1337,7 @@ setClient(clientType);
 setSender(currentSender);
 updateServerStatus();
 loadHistory(false);
+loadLanInfo();
 connectEvents();
 </script>
 </body>
