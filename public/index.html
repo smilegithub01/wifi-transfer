@@ -198,7 +198,7 @@
     font-size: 11px;
   }
   .right .meta { justify-content: flex-end; }
-  .delete-one {
+  .delete-one, .copy-one {
     border: 0;
     background: transparent;
     color: var(--muted);
@@ -208,6 +208,7 @@
     cursor: pointer;
   }
   .delete-one:active { color: var(--danger); background: rgba(250, 81, 81, 0.1); }
+  .copy-one:active { color: var(--brand); background: rgba(7, 193, 96, 0.12); }
 
   .file-card { min-width: min(250px, 72vw); }
   .file-preview {
@@ -660,6 +661,7 @@ function messageHtml(item) {
         <div class="bubble">${body}</div>
         <div class="meta">
           <span>${metaParts.filter(Boolean).join(' · ')}</span>
+          ${item.type === 'text' ? `<button class="copy-one" onclick="copyText(this, '${encodeURIComponent(item.text)}')">复制</button>` : ''}
           ${canDelete ? `<button class="delete-one" onclick="deleteMessage('${escHtml(item.id)}')">删除</button>` : ''}
         </div>
       </div>
@@ -1073,6 +1075,40 @@ function guessLocalCategory(filename) {
   if (/\.(mp4|mov|m4v|avi|mkv|webm)$/.test(lower)) return 'video';
   if (/\.(mp3|wav|m4a|aac|flac|ogg)$/.test(lower)) return 'audio';
   return 'other';
+}
+
+async function copyText(btn, encoded) {
+  const text = decodeURIComponent(encoded || '');
+  let ok = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    }
+  } catch {}
+  if (!ok) {
+    // 局域网多为 http，clipboard API 不可用，回退到 execCommand
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch {}
+  }
+  if (ok) {
+    toastMsg('已复制');
+    if (btn) {
+      const original = btn.textContent;
+      btn.textContent = '已复制';
+      setTimeout(() => { btn.textContent = original; }, 1200);
+    }
+  } else {
+    toastMsg('复制失败，请手动选择');
+  }
 }
 
 async function deleteMessage(id) {
