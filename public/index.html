@@ -632,6 +632,7 @@ async function loadAvatars() {
   try {
     const r = await fetch('/api/avatars');
     serverAvatars = await r.json();
+    lastRenderSnapshot = '';
     renderMessages(true);
   } catch {}
 }
@@ -639,7 +640,8 @@ async function loadAvatars() {
 function getAvatarForSender(sender) {
   const avatar = serverAvatars[sender];
   if (avatar) {
-    const bustCache = `?t=${Date.now()}`;
+    const sep = avatar.includes('?') ? '&' : '?';
+    const bustCache = `${sep}t=${Date.now()}`;
     const fallback = sender === 'computer' ? '💻' : '📱';
     return `<img src="${escHtml(avatar + bustCache)}" alt="${escHtml(senderName(sender))}" onerror="this.parentElement.textContent='${fallback}'">`;
   }
@@ -665,6 +667,7 @@ async function handleAvatarUpload(sender) {
       const d = await r.json();
       if (r.ok && d.url) {
         serverAvatars[sender] = d.url;
+        lastRenderSnapshot = '';
         renderMessages(true);
         toastMsg('头像已更新');
       } else {

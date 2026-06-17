@@ -365,8 +365,9 @@ app.get('/api/avatars', (_req, res) => {
 
 const avatarStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, AVATARS_DIR),
-  filename: (req, file, cb) => {
-    cb(null, `${req.params.sender}.jpg`);
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `avatar_${Date.now()}${ext}`);
   },
 });
 const avatarUpload = multer({ storage: avatarStorage, limits: { fileSize: 500 * 1024 } });
@@ -375,6 +376,16 @@ app.post('/api/avatars/:sender', avatarUpload.single('avatar'), (req, res) => {
   const { sender } = req.params;
   if (sender !== 'phone' && sender !== 'computer') {
     return res.status(400).json({ error: '无效的发送方' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: '未收到文件' });
+  }
+  const targetPath = path.join(AVATARS_DIR, `${sender}.jpg`);
+  try {
+    if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+    fs.renameSync(req.file.path, targetPath);
+  } catch (e) {
+    try { fs.copyFileSync(req.file.path, targetPath); fs.unlinkSync(req.file.path); } catch {}
   }
   res.json({ ok: true, url: `/avatars/${sender}.jpg` });
 });
